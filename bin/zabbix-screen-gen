@@ -1,0 +1,73 @@
+#!/usr/bin/env ruby
+
+require 'builder'
+require 'cli'
+require 'sdl4r'
+
+class Screen
+	class Graph
+		def initialize(builder, graph, host, x, y)
+			builder.screen_item do |screen_item|
+				screen_item.resourcetype	"0"
+				screen_item.width			"300"
+				screen_item.height			"100"
+				screen_item.x				x.to_s
+				screen_item.y				y.to_s
+				screen_item.colspan			"1"
+				screen_item.rowspan			"1"
+				screen_item.elements		"0"
+				screen_item.valign			"0"
+				screen_item.halign			"0"
+				screen_item.style			"0"
+				screen_item.url
+				screen_item.dynamic			"0"
+				screen_item.sort_triggers	"0"
+
+				screen_item.resource do |resource|
+					resource.name graph
+					resource.host host
+				end
+			end
+		end
+	end
+
+	def initialize(builder, name, graphs = [], hosts = [], graph_exclude = {})
+		builder.screens do |screens|
+			screens.screen do |screen|
+				screen.name(name)
+				screen.hsize(hosts.length)
+				screen.vsize(graphs.length)
+
+				screen.screen_items do |screen_items|
+					graphs.each_with_index do |graph, graph_no|
+						hosts.each_with_index do |host, host_no|
+							Graph.new(screen_items, graph, host, host_no, graph_no) unless graph_exclude.include? host and graph_exclude[host].include? graph
+						end
+					end
+				end
+			end
+		end
+	end
+end
+
+settings = CLI.new do
+	description "Generates Zabbix import XML to standard output based on configuration file"
+	argument :config, 
+		description: "path to configuration file to use",
+		cast: Pathname
+end.parse!
+
+config = SDL4R::load(settings.config.read)
+
+graph_exclude = {}
+config.graph_exclude.each{|ge| graph_exclude[ge.value] = ge.content}
+
+builder = Builder::XmlMarkup.new(:target=>STDOUT, :indent=>4)
+builder.instruct! :xml, :version=>"1.0", :encoding=>"UTF-8"
+
+builder.zabbix_export do |export|
+	export.version "2.0"
+	export.date Time.now.utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+	Screen.new(export, config.name, config.graphs, config.hosts, graph_exclude)
+end
+

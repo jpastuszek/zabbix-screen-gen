@@ -1,0 +1,37 @@
+name "IIS Performance"
+
+graphs {
+	"System Load"
+	"Processor Usage"
+	"Memory Usage"
+	"Swap Usage"
+	"File I/O Bytes"
+	"Disk I/O Operations - Combined"
+	"Disk I/O Operations - C: D:"
+	"Disk space usage C:\\"
+	"Disk space usage D:\\"
+	"Disk space usage E:\\"
+	"Network traffic on RedHat PV NIC Driver"
+	"Network traffic on Intel(R) PRO/1000 PL Network Connection"
+}
+
+hosts {
+	"prod.iis"
+	"prod.iis-next"
+}
+
+graph_exclude {
+	"prod.iis" {
+		"Disk I/O Operations - Combined"
+		"Disk space usage E:\\"
+		"Disk space usage F:\\"
+		"Disk space usage G:\\"
+		"Disk space usage H:\\"
+		"Network traffic on RedHat PV NIC Driver"
+	}
+	"prod.iis-next" {
+		"Disk I/O Operations - C: D:"
+		"Network traffic on Intel(R) PRO/1000 PL Network Connection"
+	}
+}
+
