@@ -6,10 +6,10 @@ require 'sdl4r'
 
 class Screen
 	class Graph
-		def initialize(builder, graph, host, x, y)
+		def initialize(builder, width, graph, host, x, y)
 			builder.screen_item do |screen_item|
 				screen_item.resourcetype	"0"
-				screen_item.width			"300"
+				screen_item.width			width.to_s
 				screen_item.height			"100"
 				screen_item.x				x.to_s
 				screen_item.y				y.to_s
@@ -31,7 +31,7 @@ class Screen
 		end
 	end
 
-	def initialize(builder, name, graphs = [], hosts = [], graph_exclude = {})
+	def initialize(builder, name, width, graphs = [], hosts = [], graph_exclude = {})
 		builder.screens do |screens|
 			screens.screen do |screen|
 				screen.name(name)
@@ -41,7 +41,7 @@ class Screen
 				screen.screen_items do |screen_items|
 					graphs.each_with_index do |graph, graph_no|
 						hosts.each_with_index do |host, host_no|
-							Graph.new(screen_items, graph, host, host_no, graph_no) unless graph_exclude.include? host and graph_exclude[host].include? graph
+							Graph.new(screen_items, (width + 100 - hosts.length * 100) / hosts.length, graph, host, host_no, graph_no) unless graph_exclude.include? host and [graph_exclude[host]].flatten.include? graph
 						end
 					end
 				end
@@ -60,7 +60,7 @@ end.parse!
 config = SDL4R::load(settings.config.read)
 
 graph_exclude = {}
-config.graph_exclude.each{|ge| graph_exclude[ge.value] = ge.content}
+[config.graph_exclude].flatten.each{|ge| graph_exclude[ge.value] = ge.content} if config.graph_exclude
 
 builder = Builder::XmlMarkup.new(:target=>STDOUT, :indent=>4)
 builder.instruct! :xml, :version=>"1.0", :encoding=>"UTF-8"
@@ -68,6 +68,6 @@ builder.instruct! :xml, :version=>"1.0", :encoding=>"UTF-8"
 builder.zabbix_export do |export|
 	export.version "2.0"
 	export.date Time.now.utc.strftime("%Y-%m-%dT%H:%M:%SZ")
-	Screen.new(export, config.name, config.graphs, config.hosts, graph_exclude)
+	Screen.new(export, config.name, config.width || 1000, [config.graphs].flatten, [config.hosts].flatten, graph_exclude)
 end
 

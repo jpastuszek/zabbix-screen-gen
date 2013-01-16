@@ -1,4 +1,4 @@
-name "IIS Performance"
+name "IIS Production - Performance"
 
 graphs {
 	"System Load"
@@ -7,31 +7,25 @@ graphs {
 	"Swap Usage"
 	"File I/O Bytes"
 	"Disk I/O Operations - Combined"
-	"Disk I/O Operations - C: D:"
 	"Disk space usage C:\\"
 	"Disk space usage D:\\"
 	"Disk space usage E:\\"
 	"Network traffic on RedHat PV NIC Driver"
-	"Network traffic on Intel(R) PRO/1000 PL Network Connection"
+	"Network traffic on RedHat PV NIC Driver #2"
 }
 
 hosts {
 	"prod.iis"
-	"prod.iis-next"
+	"brprod.iis"
 }
 
 graph_exclude {
 	"prod.iis" {
-		"Disk I/O Operations - Combined"
-		"Disk space usage E:\\"
-		"Disk space usage F:\\"
-		"Disk space usage G:\\"
-		"Disk space usage H:\\"
-		"Network traffic on RedHat PV NIC Driver"
+		"Network traffic on RedHat PV NIC Driver #2"
 	}
-	"prod.iis-next" {
-		"Disk I/O Operations - C: D:"
-		"Network traffic on Intel(R) PRO/1000 PL Network Connection"
+	"brprod.iis" {
+		"Disk space usage E:\\"
+		"Network traffic on RedHat PV NIC Driver"
 	}
 }
 

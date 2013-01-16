@@ -1,0 +1,16 @@
+name "IIS Production - ASP"
+
+graphs {
+	"IIS Web Service Up Time"
+	"IIS Application"
+	"IIS Request"
+	"IIS Request Processing"
+	"IIS Request Time"
+	"IIS Network"
+}
+
+hosts {
+	"prod.iis"
+	"brprod.iis"
+}
+
