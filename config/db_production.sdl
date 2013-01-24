@@ -1,4 +1,4 @@
-name "DB Performance"
+name "DB Production - Performance"
 
 graphs {
 	"System Load"
@@ -6,8 +6,8 @@ graphs {
 	"Memory Usage"
 	"Swap Usage"
 	"File I/O Bytes"
-	"Disk I/O Operations - Combined"
-	"Disk I/O Operations - Combined (C: D: + F:)"
+	"Disk I/O Operations - C:"
+	"Disk I/O Operations - D:"
 	"Disk space usage C:\\"
 	"Disk space usage D:\\"
 	"Disk space usage E:\\"
@@ -15,26 +15,9 @@ graphs {
 	"Disk space usage G:\\"
 	"Disk space usage H:\\"
 	"Network traffic on RedHat PV NIC Driver"
-	"Network traffic on Intel(R) PRO/1000 PL Network Connection"
 }
 
 hosts {
 	"prod.db"
-	"prod.db-next"
 }
-
-graph_exclude {
-	"prod.db" {
-		"Disk I/O Operations - Combined"
-		"Disk space usage E:\\"
-		"Disk space usage G:\\"
-		"Disk space usage H:\\"
-		"Network traffic on RedHat PV NIC Driver"
-	}
-	"prod.db-next" {
-		"Disk I/O Operations - Combined (C: D: + F:)"
-		"Network traffic on Intel(R) PRO/1000 PL Network Connection"
-	}
-}
-
 
