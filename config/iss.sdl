@@ -1,0 +1,23 @@
+name "ISS"
+
+graphs {
+  "CPU utilization"
+  "CPU load"
+  "Memory Usage"
+  "Disk space usage /var/cache/nginx"
+  "IO operations on /dev/xvdb - /var/cache/nginx"
+	"ISS HTTP Image Store requests"
+  "ISS HTTP Image Store requests to HTTP Thumbnailer" type="2axis"
+  "ISS HTTP Image Store workers" type="2axis"
+  "ISS HTTP Image Store S3 cache"
+  "ISS HTTP Image Store S3 objects"
+  "ISS HTTP Thumbnailer requests"
+  "ISS HTTP Thumbnailer workers" type="2axis"
+  "ISS HTTP Thumbnailer images loaded in memory"
+}
+
+hosts {
+	"dublin.en.prod.varnish"
+	"saopaulo.pt.prod.varnish"
+	"california.es.prod.varnish"
+}

@@ -1,4 +1,4 @@
-name "Production IIS"
+name "IIS"
 
 graphs {
 	"System Load"

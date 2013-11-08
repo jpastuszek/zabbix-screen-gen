@@ -1,4 +1,4 @@
-name "Production Varnish"
+name "Varnish"
 
 graphs {
 	"Varnish - Uptime"
