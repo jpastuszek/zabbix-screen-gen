@@ -1,4 +1,4 @@
-name "Test"
+name "Production Databases"
 
 graphs {
 	"System Load"
@@ -19,6 +19,17 @@ graphs {
 		"Network traffic on Citrix PV Ethernet Adapter #0" just="es.prod.db"
 		"Network traffic on RedHat PV NIC Driver #2" just="pt.prod.db"
 	}
+	"SQLServer - Backup" type="2axis"
+  "SQLServer - Connections" type="2axis"
+  exclusive {
+		"SQLServer - DB Size #prod" just="en.prod.db"
+		"SQLServer - DB Size #brprod" just="pt.prod.db"
+		"SQLServer - DB Size #mxprod" just="es.prod.db"
+	}
+	"SQLServer - Index and Table Scans"
+  "SQLServer - Throughput" type="2axis"
+  "SQLServer - Transactions" type="2axis"
+  "SQLServer - Work Files and Tables" type="2axis"
 }
 
 hosts {

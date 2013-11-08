@@ -42,8 +42,8 @@ class Screen
 		builder.screens do |screens|
 			screens.screen do |screen|
 				screen.name   name
-				screen.hsize  @max_x + 2
-				screen.vsize  @max_y + 2
+				screen.hsize  @max_x + 1
+				screen.vsize  @max_y + 1
 
 				screen.screen_items do |screen_items|
 					@graphs.each{|g| g.call(screen_items)}
