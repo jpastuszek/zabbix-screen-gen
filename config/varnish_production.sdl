@@ -1,0 +1,39 @@
+name "Production Varnish"
+
+graphs {
+	"Varnish - Uptime"
+	"Varnish - Backend 'default' probe status" type="2axis"
+	"Varnish - Backend 'node_manager' probe status" type="2axis" exclude="california.en.prod.varnish,singapore.en.prod.varnish"
+	"Varnish - Backend 'iss' probe status" type="2axis" exclude="california.en.prod.varnish,singapore.en.prod.varnish"
+	"Varnish - Backend 'ava_v1' probe status" type="2axis" exclude="california.en.prod.varnish,singapore.en.prod.varnish" just="dublin.en.prod.varnish"
+	"Varnish - Backend 'ava_v3' probe status" type="2axis" exclude="california.en.prod.varnish,singapore.en.prod.varnish" just="dublin.en.prod.varnish"
+  "CPU utilization"
+  "CPU load"
+  "Disk space usage /"
+  "Memory Usage"
+  "Memory Usage Pie" type="pie"
+  "Varnish - Free Chunks" type="2axis"
+  exclusive {
+    "IO operations on /dev/xvdb - /var/cache/nginx" exclude="california.en.prod.varnish,singapore.en.prod.varnish"
+    "IO operations on /dev/xvdb - /media/ephemeral0" just="california.en.prod.varnish,singapore.en.prod.varnish"
+  }
+  "Varnish - Requests"
+  "Varnish - Connections"
+  "Pound - Connections" exclude="california.en.prod.varnish,singapore.en.prod.varnish"
+  "Varnish - Bans" type="2axis"
+  "Varnish - Requests"
+  "Varnish - Requests - Pie" type="pie"
+  "Varnish - Cache hit"
+  "Varnish - Cache hit - Pie" type="pie"
+  "Varnish - Pass"
+  "Varnish - Pass - Pie" type="pie"
+	"Network traffic on eth0"
+}
+
+hosts {
+	"dublin.en.prod.varnish"
+	"california.en.prod.varnish"
+	"singapore.en.prod.varnish"
+	"saopaulo.pt.prod.varnish"
+	"california.es.prod.varnish"
+}
