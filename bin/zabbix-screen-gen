@@ -7,11 +7,11 @@ $> = STDERR
 
 class Screen
 	class Graph
-		def initialize(builder, width, graph, host, x, y)
+		def initialize(builder, width, height, graph, host, x, y)
 			builder.screen_item do |screen_item|
 				screen_item.resourcetype  "0"
 				screen_item.width         width.to_s
-				screen_item.height        "100"
+				screen_item.height        height.to_s
 				screen_item.x             x.to_s
 				screen_item.y             y.to_s
 				screen_item.colspan       "1"
@@ -52,10 +52,10 @@ class Screen
 		end
 	end
 
-	def graph(width, graph, host, x, y)
+	def graph(width, height, graph, host, x, y)
 		@max_x = x if x > @max_x
 		@max_y = y if y > @max_y
-		@graphs << ->(screen_items){Graph.new(screen_items, width, graph, host, x, y)}
+		@graphs << ->(screen_items){Graph.new(screen_items, width, height, graph, host, x, y)}
 	end
 end
 
@@ -74,6 +74,40 @@ config = SDL4R.read(settings.config)
 builder = Builder::XmlMarkup.new(target: settings.out_file ? settings.out_file : STDOUT, indent: 4)
 builder.instruct! :xml, version: "1.0", encoding: "UTF-8"
 
+def screen_row(graphs, hosts)
+	row = []
+	hosts.children.each_with_index do |host|
+		host_name = host.values.first
+		g = graphs.select do |graph|
+			just = graph.attributes['just']
+			just and (just.split(',').include? host_name or next)
+			exclude = graph.attributes['exclude']
+			exclude and (exclude.split(',').include? host_name and next)
+			true
+		end
+
+		if g.empty?
+			row << [host_name, nil]
+		elsif g.length == 1
+			row << [host_name, g.first.value]
+		else
+			fail "more than one graph for host entry: #{g} #{host_name}"
+		end
+	end
+	row
+end
+
+def graph_map(graphs, hosts)
+	graphs.children.each_with_index do |graph, row|
+		type = graph.attribute('type') || '1axis'
+		graphs = graph.has_children? ? graph.children : [graph]
+		screen_row(graphs, hosts).each_with_index do |host_graph, col|
+			host_name, graph = *host_graph
+			next unless graph
+			yield host_name, graph, row, col, type
+		end
+	end
+end
 
 
 builder.zabbix_export do |export|
@@ -84,17 +118,17 @@ builder.zabbix_export do |export|
 	width = (c = config.child('width') && c.values.first)
 
 	Screen.new(export, name, width || 1000) do
-		config.child('graphs').children.each_with_index do |graph, graph_no|
-			config.child('hosts').children.each_with_index do |host, host_no|
-				host_name = host.values.first
-
-				just = graph.attributes['just']
-				just and (just.split(',').include? host_name or next)
-				exclude = graph.attributes['exclude']
-				exclude and (exclude.split(',').include? host_name and next)
-
-				graph(450, graph.values.first, host_name, host_no, graph_no)
+		graph_map(config.child('graphs'), config.child('hosts')) do |host_name, graph, row, col, type|
+			width = 450
+			height = 100
+			case type
+			when '2axis'
+				width -= 55
+			when 'pie'
+				width += 116
+				height += 100
 			end
+			graph(width, height, graph, host_name, col, row)
 		end
 	end
 end

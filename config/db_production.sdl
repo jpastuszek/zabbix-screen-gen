@@ -4,18 +4,21 @@ graphs {
 	"System Load"
 	"Processor Usage"
 	"Memory Usage"
-	"Swap Usage"
+	"Swap Usage" type="2axis"
 	"File I/O Bytes"
 	"Disk I/O Operations - C:"
 	"Disk I/O Operations - D:"
-	"Disk space usage C:\\"
-	"Disk space usage D:\\"
-	"Disk space usage E:\\"   just="en.prod.db,pt.prod.db"
-	"Disk space usage F:\\"   just="en.prod.db"
-	"Disk space usage G:\\"   just="en.prod.db"
-	"Disk space usage H:\\"   just="en.prod.db"
-	"Network traffic on RedHat PV NIC Driver" exclude="es.prod.db"
-	"Network traffic on Citrix PV Ethernet Adapter #0" just="es.prod.db"
+	"Disk space usage C:\\" type="pie"
+	"Disk space usage D:\\" type="pie"
+	"Disk space usage E:\\" type="pie" just="en.prod.db,pt.prod.db"
+	"Disk space usage F:\\" type="pie" just="en.prod.db"
+	"Disk space usage G:\\" type="pie" just="en.prod.db"
+	"Disk space usage H:\\" type="pie" just="en.prod.db"
+	exclusive {
+		"Network traffic on RedHat PV NIC Driver" just="en.prod.db"
+		"Network traffic on Citrix PV Ethernet Adapter #0" just="es.prod.db"
+		"Network traffic on RedHat PV NIC Driver #2" just="pt.prod.db"
+	}
 }
 
 hosts {
