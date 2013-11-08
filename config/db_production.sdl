@@ -1,4 +1,4 @@
-name "DB Production - Performance"
+name "Test"
 
 graphs {
 	"System Load"
@@ -10,14 +10,17 @@ graphs {
 	"Disk I/O Operations - D:"
 	"Disk space usage C:\\"
 	"Disk space usage D:\\"
-	"Disk space usage E:\\"
-	"Disk space usage F:\\"
-	"Disk space usage G:\\"
-	"Disk space usage H:\\"
-	"Network traffic on RedHat PV NIC Driver"
+	"Disk space usage E:\\"   just="en.prod.db,pt.prod.db"
+	"Disk space usage F:\\"   just="en.prod.db"
+	"Disk space usage G:\\"   just="en.prod.db"
+	"Disk space usage H:\\"   just="en.prod.db"
+	"Network traffic on RedHat PV NIC Driver" exclude="es.prod.db"
+	"Network traffic on Citrix PV Ethernet Adapter #0" just="es.prod.db"
 }
 
 hosts {
-	"prod.db"
+	"en.prod.db"
+	"pt.prod.db"
+	"es.prod.db"
 }
 
