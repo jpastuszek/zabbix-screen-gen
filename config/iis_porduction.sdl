@@ -1,31 +1,37 @@
-name "IIS Production - Performance"
+name "Production IIS"
 
 graphs {
 	"System Load"
 	"Processor Usage"
 	"Memory Usage"
-	"Swap Usage"
+	"Swap Usage" type="2axis"
 	"File I/O Bytes"
 	"Disk I/O Operations - Combined"
-	"Disk space usage C:\\"
-	"Disk space usage D:\\"
-	"Disk space usage E:\\"
-	"Network traffic on RedHat PV NIC Driver"
-	"Network traffic on RedHat PV NIC Driver #2"
+	"Disk space usage C:\\" type="pie"
+	"Disk space usage D:\\" type="pie"
+	exclusive {
+		"Network traffic on RedHat PV NIC Driver"           just="en.prod.iis"
+		"Network traffic on RedHat PV NIC Driver #2"        just="pt.prod.iis"
+		"Network traffic on Citrix PV Ethernet Adapter #0"  just="es.prod.iis"
+	}
+	"IIS Web Service Up Time"
+  "IIS Application" type="2axis"
+  "IIS Request"
+  "IIS Request Processing" type="2axis"
+  "IIS Request Time"
+  "IIS Network" type="2axis"
+  "IIS Error Log - web-root.log"
+  "IIS Error Log - web-admin.log"
+  "IIS Error Log - web-accountmanagement.log"
+  "IIS Error Log - web-api.log"
+  "IIS Error Log - web-signup.log"
+  "IIS Error Log - service-email.log"
+  "IIS Error Log - service-phone.log"
+  "IIS Error Log - service-gmt.log"
 }
 
 hosts {
-	"prod.iis"
-	"brprod.iis"
+	"en.prod.iis"
+	"pt.prod.iis"
+	"es.prod.iis"
 }
-
-graph_exclude {
-	"prod.iis" {
-		"Network traffic on RedHat PV NIC Driver #2"
-	}
-	"brprod.iis" {
-		"Disk space usage E:\\"
-		"Network traffic on RedHat PV NIC Driver"
-	}
-}
-
