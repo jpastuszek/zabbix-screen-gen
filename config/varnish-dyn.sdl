@@ -1,0 +1,42 @@
+name "Varnish (dyn)"
+
+dynamic
+
+width 900
+
+graphs {
+	"Varnish - Uptime"
+	"Varnish - Request Queue" type="2axis"
+	"Varnish - Backend 'default' status"
+	"Varnish - Backend 'node_manager' status" exclude="california.en.prod.varnish,singapore.en.prod.varnish,sydney.en.prod.varnish,virginia.en.prod.varnish"
+	"Varnish - Backend 'iss' status" exclude="california.en.prod.varnish,singapore.en.prod.varnish,sydney.en.prod.varnish,virginia.en.prod.varnish"
+	"Varnish - Backend 'ava_v1' status" exclude="california.en.prod.varnish,singapore.en.prod.varnish,sydney.en.prod.varnish,virginia.en.prod.varnish" just="dublin.en.prod.varnish"
+	"Varnish - Backend 'ava_v3' status" exclude="california.en.prod.varnish,singapore.en.prod.varnish,sydney.en.prod.varnish,virginia.en.prod.varnish" just="dublin.en.prod.varnish"
+  "Varnish - Connections"
+  "Pound - Connections" exclude="california.en.prod.varnish,singapore.en.prod.varnish,sydney.en.prod.varnish,virginia.en.prod.varnish"
+  "CPU utilization"
+  "CPU load"
+  "Memory Usage"
+  "Memory Usage Pie" type="pie"
+  "Network traffic on eth0" type="2axis"
+  "Varnish - Object Expiration"
+  "Varnish - Object Growth" type="2axis"
+  "Varnish - Storage" type="2axis"
+  "Varnish - S0 Bytes Usage" type="pie"
+  "Varnish - Free Chunks" type="2axis"
+  "IO operations on /dev/xvdb - /media/ephemeral0"
+  "Disk space usage /"
+  "Varnish - Bans" type="2axis"
+  "Varnish - Ban Tests" type="2axis"
+  "Varnish - Requests"
+  "Varnish - Requests - Pie" type="pie"
+  "Varnish - Cache hit"
+  "Varnish - Cache hit - Pie" type="pie"
+  "Varnish - Pass"
+  "Varnish - Pass - Pie" type="pie"
+  "Varnish - Gzip Operations"
+}
+
+hosts {
+	"dublin.en.prod.varnish"
+}

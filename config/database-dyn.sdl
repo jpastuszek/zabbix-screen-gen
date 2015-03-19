@@ -1,4 +1,8 @@
-name "Databases"
+name "Database (dyn)"
+
+dynamic
+
+width 900
 
 graphs {
 	"System Load"
@@ -27,12 +31,10 @@ graphs {
   "SQLServer - Throughput"
   "SQLServer - Transactions" type="2axis"
   "SQLServer - Work Files and Tables" type="2axis"
-	"SQLServer - Buffer Manager" type="2axis"
+  "SQLServer - Buffer Manager" type="2axis"
 }
 
 hosts {
 	"en.prod.db"
-	"pt.prod.db"
-	"es.prod.db"
 }
 

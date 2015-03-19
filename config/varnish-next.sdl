@@ -1,0 +1,48 @@
+name "Varnish Next"
+
+graphs {
+	"Varnish - Uptime"
+	"Varnish - Request Queue" type="2axis"
+	"Varnish - Backend 'default' probe status" type="2axis"
+	"Varnish - Backend 'node_manager' probe status" type="2axis" exclude="next.california.en.prod.varnish,next.singapore.en.prod.varnish,next.sydney.en.prod.varnish,next.virginia.en.prod.varnish"
+	"Varnish - Backend 'iss' probe status" type="2axis" exclude="next.california.en.prod.varnish,next.singapore.en.prod.varnish,next.sydney.en.prod.varnish,next.virginia.en.prod.varnish"
+	"Varnish - Backend 'ava_v1' probe status" type="2axis" exclude="next.california.en.prod.varnish,next.singapore.en.prod.varnish,next.sydney.en.prod.varnish,next.virginia.en.prod.varnish" just="next.dublin.en.prod.varnish"
+	"Varnish - Backend 'ava_v3' probe status" type="2axis" exclude="next.california.en.prod.varnish,next.singapore.en.prod.varnish,next.sydney.en.prod.varnish,next.virginia.en.prod.varnish" just="next.dublin.en.prod.varnish"
+  "Varnish - Connections"
+  "Pound - Connections" exclude="next.california.en.prod.varnish,next.singapore.en.prod.varnish,next.sydney.en.prod.varnish,next.virginia.en.prod.varnish"
+  "CPU utilization"
+  "CPU load"
+  "Memory Usage"
+  "Memory Usage Pie" type="pie"
+	"Network traffic on eth0"
+	"Varnish - Object Expiration"
+  "Varnish - Object Growth" type="2axis"
+  "Varnish - Storage" type="2axis"
+  "Varnish - S0 Bytes Usage" type="pie"
+  "Varnish - Free Chunks" type="2axis"
+  exclusive {
+  #"IO operations on /dev/xvdb - /var/cache/nginx" exclude="next.california.en.prod.varnish,next.singapore.en.prod.varnish,next.sydney.en.prod.varnish,next.virginia.en.prod.varnish"
+  #  "IO operations on /dev/xvdb - /media/ephemeral0" just="next.california.en.prod.varnish,next.singapore.en.prod.varnish,next.sydney.en.prod.varnish,next.virginia.en.prod.varnish"
+	"IO operations on /dev/xvdb - /media/ephemeral0"
+  }
+  "Disk space usage /"
+  "Varnish - Bans" type="2axis"
+  "Varnish - Ban Tests" type="2axis"
+  "Varnish - Requests"
+  "Varnish - Requests - Pie" type="pie"
+  "Varnish - Cache hit"
+  "Varnish - Cache hit - Pie" type="pie"
+  "Varnish - Pass"
+  "Varnish - Pass - Pie" type="pie"
+  "Varnish - Gzip Operations"
+}
+
+hosts {
+	"next.dublin.en.prod.varnish"
+	"next.california.en.prod.varnish"
+	"next.singapore.en.prod.varnish"
+	"next.sydney.en.prod.varnish"
+	"next.virginia.en.prod.varnish"
+	"next.saopaulo.pt.prod.varnish"
+	"next.california.es.prod.varnish"
+}
