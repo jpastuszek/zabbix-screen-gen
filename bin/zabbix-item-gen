@@ -1,0 +1,337 @@
+#!/usr/bin/env ruby
+require 'builder'
+require 'cli'
+require 'sdl4r'
+
+$> = STDERR
+
+settings = CLI.new do
+	description 'Generates Zabbix import XML to standard output based on configuration file'
+	argument :config,
+		description: 'path to configuration file to use',
+		cast: Pathname
+	option :out_file,
+		cast: ->(f){File.new(f, 'w')},
+		short: :o
+end.parse!
+
+config = SDL4R.read(settings.config)
+
+class Template
+	def initialize(builder, name)
+		@applications = []
+		@items = []
+		builder.template do |template|
+			template.template name
+			template.name name
+			template.groups do |groups|
+				groups.group do |group|
+					group.name 'Templates'
+				end
+			end
+			yield self
+			template.applications do |applications|
+				@applications.each do |name|
+					applications.application do |application|
+						application.name name
+					end
+				end
+			end
+			template.items do |items|
+				@items.each do |name, key, application_name, opts|
+					items.item do |item|
+						item.name name
+						item.key key
+						item.applications do |applications|
+							applications.application do |application|
+								application.name application_name
+							end
+						end
+
+						item.type case opts[:type]
+						when :zabbix_agent
+							0
+						when :zabbix_active
+							7
+						else
+							0
+						end
+						item.multiplier opts[:multiplier] || 0
+						item.delay opts[:delay] || 30
+						item.history opts[:history] || 7
+						item.trends opts[:trends] || 365
+						item.status opts[:status] || 0 ##
+						item.value_type case opts[:value_type]
+						when :float
+							0
+						when :character
+							1
+						when :log
+							2
+						when :unsigned
+							3
+						when :text
+							4
+						else
+							0
+						end
+						item.units opts[:units] || ''
+						item.delta case opts[:delta]
+						when :as_is
+							0
+						when :delta
+							1
+						when :delta_simple
+							2
+						else
+							0
+						end
+						item.formula opts[:multiplier] || 1
+						item.data_type opts[:data_type] || 0 ##
+						item.description opts[:description] || ''
+
+						item.snmp_community
+						item.snmp_oid
+						item.allowed_hosts
+						item.snmpv3_contextname
+						item.snmpv3_securityname
+						item.snmpv3_securitylevel 0
+						item.snmpv3_authprotocol 9
+						item.snmpv3_authpassphrase
+						item.snmpv3_privprotocol 0
+						item.snmpv3_privpassphrase
+						item.delay_flex
+						item.params
+						item.ipmi_sensor
+						item.authtype 0
+						item.username
+						item.password
+						item.publickey
+						item.privatekey
+						item.port
+						item.inventory_link 0
+						item.valuemap
+					end
+				end
+			end
+		end
+	end
+
+	def application(name)
+		@applications << name
+	end
+
+	def item(name, number, key, application, opts = {})
+		@items << [name, number, key, application, opts]
+	end
+end
+
+class Graph
+	attr_reader :items
+
+	def initialize(builder, template_name, name, opts = {})
+		@name = name
+		@template_name = template_name
+		@items = []
+		yield self
+
+		builder.graph do |g|
+			g.name name
+			g.width 900
+			g.height 200
+			g.yaxismin 0
+			g.yaxismax 100
+			g.show_work_period 1
+			g.show_triggers 1
+			g.type opts[:type] || 0
+			g.show_legend 1
+			g.show_3d 0
+			g.percent_left 0.0000
+			g.percent_right 0.0000
+			g.ymin_type_1 1
+			g.ymax_type_1 0
+			g.ymin_item_1 0
+			g.ymax_item_1 0
+			g.graph_items do |graph_items|
+				@items.each do |host, key, number, color, opts|
+					graph_items.graph_item do |gi|
+						gi.sortorder number
+						gi.drawtype opts[:drawtype] || 0
+						gi.color color
+						gi.yaxisside opts[:yaxisside] || 0
+						gi.calc_fnc 2
+						gi.type 0 ##
+						gi.item do |i|
+							i.host host
+							i.key key
+						end
+					end
+				end
+			end
+		end
+	end
+
+	def item(key, number, color, opts = {})
+		@items << [@template_name, key, number, color, opts]
+	end
+end
+
+builder = Builder::XmlMarkup.new(target: settings.out_file ? settings.out_file : STDOUT, indent: 4)
+builder.instruct! :xml, version: '1.0', encoding: 'UTF-8'
+
+builder.zabbix_export do |export|
+	export.version '2.0'
+	export.date Time.now.utc.strftime('%Y-%m-%dT%H:%M:%SZ')
+	export.groups do |groups|
+		groups.group do |group|
+			group.name 'Templates'
+		end
+	end
+
+	@groups = {}
+
+	template_name = config.child('name').values.first
+	export.templates do |templates|
+		Template.new(templates, template_name) do |template|
+			template.application('Performance Counter')
+
+			lines = STDIN.readlines.map(&:chomp).select do |line|
+				line.start_with?(*config.child('perf_root').values.map{|r| "\\#{r}("})
+			end
+
+			lines = lines.select do |line|
+				line.split('\\', 3)[2] =~ /Cache/
+			end
+
+
+			lines.each do |counter|
+				_, group, name = counter.split('\\', 3)
+				group, instance = *group.match(/(.*)\((.*)\)/).captures
+				instance_name = instance.split('_').drop(4).join(' ')
+				instance_name = instance_name.split(' ').drop(1).join(' ') unless instance_name == 'ROOT'
+				instance_name = 'Total' if instance_name.empty?
+
+				groups = [
+					[/^Cache (Total|%)/, 'Cache Total'],
+					[/^Cache API/, 'Cache API'],
+					[/^Output Cache/, 'Output Cache']
+				]
+
+				_, group_name = *groups.select do |match, *_|
+					name =~ match
+				end.last
+
+				group_name or raise "group not matched for #{name}!"
+
+				@groups["#{instance_name} - #{group_name}"] ||= []
+				@groups["#{instance_name} - #{group_name}"] << counter
+
+				#p [group, instance_name, name]
+
+				matrix = [
+					[/^Cache %/, :float, :as_is, '%'],
+					[/Entries$/, :unsigned, :as_is, 'entries'],
+					[/Ratio$/, :float, :as_is, '%'],
+					[/Hits$/, :float, :delta, 'hits/s'],
+					[/Misses$/, :float, :delta, 'misses/s'],
+					[/Trims$/, :float, :delta, 'trims/s'],
+					[/Turnover Rate$/, :float, :as_is, 'entries/s'],
+				]
+
+				_, value_type, delta, units = *matrix.select do |match, *_|
+					name =~ match
+				end.first
+
+				value_type or raise "#{name} not matched!"
+
+				template.item("#{instance_name} - #{name}", "perf_counter[#{counter}]", 'Performance Counter',
+					value_type: value_type,
+					delta: delta,
+					units: units
+				)
+			end
+		end
+	end
+
+	export.graphs do |graphs|
+		p @groups.keys
+		@groups.each do |group_name, counters|
+			p group_name
+			counters.group_by do |counter|
+				case counter
+				when /Memory Limit Used|Entries/
+					"Cache Entries"
+				when /Trims|Turnover/
+					"Cache Expiration"
+				when /Misses|Hits/
+					"Cache Hit"
+				when /Hit Ratio/
+					nil
+				else
+					fail "no graph association for #{counter}"
+				end
+			end
+			.each do |graph_name, counters|
+				case graph_name
+				when "Cache Entries"
+					Graph.new(graphs, template_name, "#{group_name} - #{graph_name}") do |graph|
+						counters.each do |counter|
+							case counter
+							when /Entries/
+								graph.item("perf_counter[#{counter}]", 0, 'EE00EE', drawtype: 1, yaxisside: 0)
+							when /Process Memory Limit Used/
+								graph.item("perf_counter[#{counter}]", 1, '0000C8', drawtype: 2, yaxisside: 1)
+							when /Machine Memory Limit Used/
+								graph.item("perf_counter[#{counter}]", 2, '000000', drawtype: 2, yaxisside: 1)
+							else
+								fail "unmatched graph item #{counter}"
+							end
+						end
+					end
+				when "Cache Expiration"
+					Graph.new(graphs, template_name, "#{group_name} - #{graph_name}") do |graph|
+						counters.each do |counter|
+							case counter
+							when /Trims/
+								graph.item("perf_counter[#{counter}]", 0, 'FF3333', drawtype: 1, yaxisside: 0)
+							when /Turnover/
+								graph.item("perf_counter[#{counter}]", 1, '6666FF', drawtype: 1, yaxisside: 1)
+							else
+								fail "unmatched graph item #{counter}"
+							end
+						end
+					end
+				when "Cache Hit"
+					Graph.new(graphs, template_name, "#{group_name} - #{graph_name}", type: 1) do |graph|
+						counters.each do |counter|
+							case counter
+							when /Hits/
+								graph.item("perf_counter[#{counter}]", 0, '00EE00', drawtype: 0, yaxisside: 0)
+							when /Misses/
+								graph.item("perf_counter[#{counter}]", 1, 'FF3333', drawtype: 0, yaxisside: 0)
+							else
+								fail "unmatched graph item #{counter}"
+							end
+						end
+					end
+					Graph.new(graphs, template_name, "#{group_name} - #{graph_name} pie", type: 2) do |graph|
+						counters.each do |counter|
+							case counter
+							when /Hits/
+								graph.item("perf_counter[#{counter}]", 0, '00EE00', drawtype: 0, yaxisside: 0)
+							when /Misses/
+								graph.item("perf_counter[#{counter}]", 1, 'FF3333', drawtype: 0, yaxisside: 0)
+							else
+								fail "unmatched graph item #{counter}"
+							end
+						end
+					end
+				else
+					p graph_name
+				end
+			end
+		end
+	end
+end
+
+
