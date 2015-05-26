@@ -57,7 +57,7 @@ class Template
 							0
 						end
 						item.multiplier opts[:multiplier] || 0
-						item.delay opts[:delay] || 30
+						item.delay opts[:delay] || 120
 						item.history opts[:history] || 7
 						item.trends opts[:trends] || 365
 						item.status opts[:status] || 0 ##
@@ -114,6 +114,12 @@ class Template
 					end
 				end
 			end
+
+			builder.discovery_rules
+			builder.macros
+			builder.templates
+			@screen_builder.call(builder)
+			## Screens
 		end
 	end
 
@@ -123,6 +129,62 @@ class Template
 
 	def item(name, number, key, application, opts = {})
 		@items << [name, number, key, application, opts]
+	end
+
+	def screen_builder(&block)
+		@screen_builder = block
+	end
+end
+
+class Screen
+	class Graph
+		def initialize(builder, width, height, graph, host, x, y, dynamic = false)
+			builder.screen_item do |screen_item|
+				screen_item.resourcetype  "0"
+				screen_item.width         width.to_s
+				screen_item.height        height.to_s
+				screen_item.x             x.to_s
+				screen_item.y             y.to_s
+				screen_item.colspan       "1"
+				screen_item.rowspan       "1"
+				screen_item.elements      "0"
+				screen_item.valign        "0"
+				screen_item.halign        "0"
+				screen_item.style         "0"
+				screen_item.url
+				screen_item.dynamic       dynamic ? "1" : "0"
+				screen_item.sort_triggers "0"
+
+				screen_item.resource do |resource|
+					resource.name graph
+					resource.host host
+				end
+			end
+		end
+	end
+
+	def initialize(builder, name)
+		@graphs = []
+		@max_x = 0
+		@max_y = 0
+
+		yield self
+
+		builder.screen do |screen|
+			screen.name   name
+			screen.hsize  @max_x + 1
+			screen.vsize  @max_y + 1
+
+			screen.screen_items do |screen_items|
+				@graphs.each{|g| g.call(screen_items)}
+			end
+		end
+	end
+
+	def graph(width, height, graph, host, x, y, dynamic = false)
+		@max_x = x if x > @max_x
+		@max_y = y if y > @max_y
+		@graphs << ->(screen_items){Graph.new(screen_items, width, height, graph, host, x, y, dynamic)}
 	end
 end
 
@@ -188,7 +250,8 @@ builder.zabbix_export do |export|
 		end
 	end
 
-	@groups = {}
+	@graphs_teleports = []
+	@graph_groups = {}
 
 	template_name = config.child('name').values.first
 	export.templates do |templates|
@@ -203,6 +266,7 @@ builder.zabbix_export do |export|
 				line.split('\\', 3)[2] =~ /Cache/
 			end
 
+			@groups = {}
 
 			lines.each do |counter|
 				_, group, name = counter.split('\\', 3)
@@ -250,86 +314,117 @@ builder.zabbix_export do |export|
 					units: units
 				)
 			end
+
+			@groups.each do |group_name, counters|
+				counters.group_by do |counter|
+					case counter
+					when /Memory Limit Used|Entries/
+						"Cache Entries"
+					when /Trims|Turnover/
+						"Cache Expiration"
+					when /Misses|Hits/
+						"Cache Hit"
+					when /Hit Ratio/
+						nil
+					else
+						fail "no graph association for #{counter}"
+					end
+				end
+				.each do |graph_name, counters|
+					graph_name or next
+					@graph_groups[group_name] ||= []
+					case graph_name
+					when "Cache Entries"
+						@graphs_teleports << lambda { |graphs|
+							Graph.new(graphs, template_name, "#{group_name} - #{graph_name}") do |graph|
+								counters.each do |counter|
+									case counter
+									when /Entries/
+										graph.item("perf_counter[#{counter}]", 0, 'EE00EE', drawtype: 1, yaxisside: 0)
+									when /Process Memory Limit Used/
+										graph.item("perf_counter[#{counter}]", 1, '0000C8', drawtype: 2, yaxisside: 1)
+									when /Machine Memory Limit Used/
+										graph.item("perf_counter[#{counter}]", 2, '000000', drawtype: 2, yaxisside: 1)
+									else
+										fail "unmatched graph item #{counter}"
+									end
+								end
+							end
+						}
+						@graph_groups[group_name] << "#{group_name} - #{graph_name}"
+					when "Cache Expiration"
+						@graphs_teleports << lambda { |graphs|
+							Graph.new(graphs, template_name, "#{group_name} - #{graph_name}") do |graph|
+								counters.each do |counter|
+									case counter
+									when /Trims/
+										graph.item("perf_counter[#{counter}]", 0, 'FF3333', drawtype: 1, yaxisside: 0)
+									when /Turnover/
+										graph.item("perf_counter[#{counter}]", 1, '6666FF', drawtype: 1, yaxisside: 1)
+									else
+										fail "unmatched graph item #{counter}"
+									end
+								end
+							end
+						}
+						@graph_groups[group_name] << "#{group_name} - #{graph_name}"
+					when "Cache Hit"
+						@graphs_teleports << lambda { |graphs|
+							Graph.new(graphs, template_name, "#{group_name} - #{graph_name}", type: 1) do |graph|
+								counters.each do |counter|
+									case counter
+									when /Hits/
+										graph.item("perf_counter[#{counter}]", 0, '00EE00', drawtype: 0, yaxisside: 0)
+									when /Misses/
+										graph.item("perf_counter[#{counter}]", 1, 'FF3333', drawtype: 0, yaxisside: 0)
+									else
+										fail "unmatched graph item #{counter}"
+									end
+								end
+							end
+						}
+						@graph_groups[group_name] << "#{group_name} - #{graph_name}"
+						@graphs_teleports << lambda { |graphs|
+							Graph.new(graphs, template_name, "#{group_name} - #{graph_name} pie", type: 2) do |graph|
+								counters.each do |counter|
+									case counter
+									when /Hits/
+										graph.item("perf_counter[#{counter}]", 0, '00EE00', drawtype: 0, yaxisside: 0)
+									when /Misses/
+										graph.item("perf_counter[#{counter}]", 1, 'FF3333', drawtype: 0, yaxisside: 0)
+									else
+										fail "unmatched graph item #{counter}"
+									end
+								end
+							end
+						}
+						@graph_groups[group_name] << "#{group_name} - #{graph_name} pie"
+					else
+						fail "unmatched graph #{group_name}"
+					end
+				end
+			end
+
+			template.screen_builder do |builder|
+				builder.screens do |screens|
+					Screen.new(screens, template_name) do |screen|
+						@graph_groups.each.with_index do |item, y|
+							group_name, graphs = *item
+							p group_name, graphs, y
+
+							graphs.each.with_index do |graph, x|
+								screen.graph(300, 100, graph, template_name, x, y, true)
+							end
+						end
+					end
+				end
+			end
 		end
 	end
 
 	export.graphs do |graphs|
-		p @groups.keys
-		@groups.each do |group_name, counters|
-			p group_name
-			counters.group_by do |counter|
-				case counter
-				when /Memory Limit Used|Entries/
-					"Cache Entries"
-				when /Trims|Turnover/
-					"Cache Expiration"
-				when /Misses|Hits/
-					"Cache Hit"
-				when /Hit Ratio/
-					nil
-				else
-					fail "no graph association for #{counter}"
-				end
-			end
-			.each do |graph_name, counters|
-				case graph_name
-				when "Cache Entries"
-					Graph.new(graphs, template_name, "#{group_name} - #{graph_name}") do |graph|
-						counters.each do |counter|
-							case counter
-							when /Entries/
-								graph.item("perf_counter[#{counter}]", 0, 'EE00EE', drawtype: 1, yaxisside: 0)
-							when /Process Memory Limit Used/
-								graph.item("perf_counter[#{counter}]", 1, '0000C8', drawtype: 2, yaxisside: 1)
-							when /Machine Memory Limit Used/
-								graph.item("perf_counter[#{counter}]", 2, '000000', drawtype: 2, yaxisside: 1)
-							else
-								fail "unmatched graph item #{counter}"
-							end
-						end
-					end
-				when "Cache Expiration"
-					Graph.new(graphs, template_name, "#{group_name} - #{graph_name}") do |graph|
-						counters.each do |counter|
-							case counter
-							when /Trims/
-								graph.item("perf_counter[#{counter}]", 0, 'FF3333', drawtype: 1, yaxisside: 0)
-							when /Turnover/
-								graph.item("perf_counter[#{counter}]", 1, '6666FF', drawtype: 1, yaxisside: 1)
-							else
-								fail "unmatched graph item #{counter}"
-							end
-						end
-					end
-				when "Cache Hit"
-					Graph.new(graphs, template_name, "#{group_name} - #{graph_name}", type: 1) do |graph|
-						counters.each do |counter|
-							case counter
-							when /Hits/
-								graph.item("perf_counter[#{counter}]", 0, '00EE00', drawtype: 0, yaxisside: 0)
-							when /Misses/
-								graph.item("perf_counter[#{counter}]", 1, 'FF3333', drawtype: 0, yaxisside: 0)
-							else
-								fail "unmatched graph item #{counter}"
-							end
-						end
-					end
-					Graph.new(graphs, template_name, "#{group_name} - #{graph_name} pie", type: 2) do |graph|
-						counters.each do |counter|
-							case counter
-							when /Hits/
-								graph.item("perf_counter[#{counter}]", 0, '00EE00', drawtype: 0, yaxisside: 0)
-							when /Misses/
-								graph.item("perf_counter[#{counter}]", 1, 'FF3333', drawtype: 0, yaxisside: 0)
-							else
-								fail "unmatched graph item #{counter}"
-							end
-						end
-					end
-				else
-					p graph_name
-				end
-			end
+		@graphs_teleports.each do |g|
+			g.call(graphs)
 		end
 	end
 end
